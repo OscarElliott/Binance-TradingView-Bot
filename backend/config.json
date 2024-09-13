@@ -1,0 +1,18 @@
+{
+    "binance_api_key": "your_api_key",
+    "binance_api_secret": "your_api_secret",
+    "webhook_port": 8080,
+    "bots": [
+        {
+            "id": "spot_bot_1",
+            "type": "spot",
+            "trading_pair": "BTCUSDT"
+        },
+        {
+            "id": "futures_bot_1",
+            "type": "futures",
+            "trading_pair": "BTCUSDT",
+            "leverage": 5
+        }
+    ]
+}
