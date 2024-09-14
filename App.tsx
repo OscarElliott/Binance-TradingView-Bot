@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 
 interface Bot {
   id: string;
@@ -39,7 +41,7 @@ export default function TradingBotDashboard() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [newBot, setNewBot] = useState<Bot>({
     id: '',
-    type: '',
+    type: 'spot',
     tradingPair: '',
     leverage: 1,
     apiKey: '',
@@ -50,7 +52,22 @@ export default function TradingBotDashboard() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewBot(prev => ({ ...prev, [name]: name === 'leverage' ? parseInt(value) : value }));
+    setNewBot(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTypeChange = (value: string) => {
+    setNewBot(prev => ({ ...prev, type: value }));
+  };
+
+  const handleLeverageChange = (value: number[]) => {
+    setNewBot(prev => ({ ...prev, leverage: value[0] }));
+  };
+
+  const handleLeverageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1 && value <= 100) {
+      setNewBot(prev => ({ ...prev, leverage: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +80,7 @@ export default function TradingBotDashboard() {
       setBots(prev => [...prev, savedBot]);
       setNewBot({
         id: '',
-        type: '',
+        type: 'spot',
         tradingPair: '',
         leverage: 1,
         apiKey: '',
@@ -101,14 +118,15 @@ export default function TradingBotDashboard() {
               </div>
               <div>
                 <Label htmlFor="type" className="text-gray-200">Bot Type</Label>
-                <Input
-                  id="type"
-                  name="type"
-                  value={newBot.type}
-                  onChange={handleInputChange}
-                  required
-                  className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
-                />
+                <Select onValueChange={handleTypeChange} value={newBot.type}>
+                  <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectValue placeholder="Select bot type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectItem value="spot">Spot</SelectItem>
+                    <SelectItem value="futures">Futures</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="tradingPair" className="text-gray-200">Trading Pair</Label>
@@ -123,16 +141,27 @@ export default function TradingBotDashboard() {
               </div>
               <div>
                 <Label htmlFor="leverage" className="text-gray-200">Leverage</Label>
-                <Input
-                  id="leverage"
-                  name="leverage"
-                  type="number"
-                  value={newBot.leverage}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
-                />
+                <div className="flex items-center space-x-4">
+                  <Slider
+                    id="leverageSlider"
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={[newBot.leverage]}
+                    onValueChange={handleLeverageChange}
+                    className="flex-grow"
+                  />
+                  <Input
+                    id="leverage"
+                    name="leverage"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={newBot.leverage}
+                    onChange={handleLeverageInputChange}
+                    className="w-20 bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="apiKey" className="text-gray-200">API Key</Label>
