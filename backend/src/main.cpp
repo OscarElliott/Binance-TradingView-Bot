@@ -55,6 +55,8 @@ private:
         Routes::Post(router, "/webhook", Routes::bind(&BackendServer::handleWebhook, this));
         Routes::Post(router, "/addbot", Routes::bind(&BackendServer::handleAddBot, this));
         Routes::Post(router, "/getbots", Routes::bind(&BackendServer::handleFetchBots, this));
+        Routes::Post(router, "/getSettings", Routes::bind(&BackendServer::fetchUserConfig, this));
+        Routes::Post(router, "/postSettings", Routes::bind(&BackendServer::updateUserConfig, this));
     }
 
     void loadBotsFromConfig() 
@@ -146,6 +148,66 @@ private:
 
             response.send(Http::Code::Bad_Request, errorData.dump());
         }
+        // add bot to static config file
+        // Open the JSON file to read current configuration
+        ifstream file("config.json");
+        if (!file.is_open()) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Could not open config.json file.";
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        json config;
+        try {
+            file >> config;
+            file.close(); // Close the file after reading
+        } catch (const json::parse_error& e) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Error parsing config.json: " + string(e.what());
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        if (!config.contains("bots") || !config["bots"].is_array()) 
+        {
+            config["bots"] = json::array();
+        }
+
+        json& bots = config["bots"];
+
+        // Iterate over each bot in the newConfig
+        for (const auto& newBot : newConfig["bots"]) 
+        {
+            string newBotId = newBot.value("id", "");
+            bool botFound = false;
+
+            // Update existing bot or add new bot
+            for (auto& bot : bots) {
+                if (bot["id"] == newBotId) {
+                    bot = newBot; // Replace with new data
+                    botFound = true;
+                    break;
+                }
+            }
+
+            // If bot was not found in the existing list, add it
+            if (!botFound) {
+                bots.push_back(newBot);
+            }
+        }
+
+        // Write the updated configuration back to the file
+        ofstream outFile("config.json");
+        if (!outFile.is_open()) 
+        {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Could not open config.json file for writing.";
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+        }
     }
 
     void handleFetchBots(const Rest::Request& request, Http::ResponseWriter response)
@@ -182,6 +244,119 @@ private:
             response.send(Http::Code::Internal_Server_Error, errorData.dump());
         }
     }
+
+    void fetchUserConfig(const Rest::Request& request, Http::ResponseWriter response) 
+    {
+        ifstream file("config.json");  // Open the JSON file
+        if (!file.is_open()) {
+            cerr << "Error: Could not open config.json file.\n";
+            return;
+        }
+
+        json config;
+        try {
+            file >> config;  // Parse the JSON file into the config object
+        } catch (const json::parse_error& e) {
+            cerr << "Error: JSON parse error: " << e.what() << "\n";
+            return;
+        }
+
+        // Extract the fields from the JSON object
+        string email = config.value("Email", "");
+        string apiKey = config.value("binance_api_key", "");
+        
+
+        try
+        {
+            json responseData;
+            responseData["Email"] = email;
+            responseData["apiKey"] = apiKey;
+            responseData["status"] = "success";
+            responseData["message"] = "Bot configuration saved successfully.";
+
+            response.send(Http::Code::Ok, responseData.dump());
+        }
+        catch(const exception& e)
+        {
+            cerr << "Couldn't fetch user settings" << '\n';
+        }
+    }
+
+    void updateUserConfig(const Rest::Request& request, Http::ResponseWriter response) 
+    {
+        // Read the request body to get the new configuration details
+        json newConfig;
+        try {
+            newConfig = json::parse(request.body());
+        } catch (const json::parse_error& e) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Invalid JSON format: " + string(e.what());
+            response.send(Http::Code::Bad_Request, errorResponse.dump());
+            return;
+        }
+
+        // Open the JSON file to read current configuration
+        ifstream file("config.json");
+        if (!file.is_open()) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Could not open config.json file.";
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        json config;
+        try {
+            file >> config;
+            file.close(); // Close the file after reading
+        } catch (const json::parse_error& e) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Error parsing config.json: " + string(e.what());
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        // Update the configuration with new values
+        if (newConfig.contains("Email")) {
+            config["Email"] = newConfig["Email"];
+        }
+        if (newConfig.contains("binance_api_key")) {
+            config["binance_api_key"] = newConfig["binance_api_key"];
+        }
+        if (newConfig.contains("binance_api_secret")) {
+            config["binance_api_secret"] = newConfig["binance_api_secret"];
+        }
+
+        // Write the updated configuration back to the file
+        ofstream outFile("config.json");
+        if (!outFile.is_open()) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Could not open config.json file for writing.";
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        try {
+            outFile << config.dump(4); // Pretty-print with 4-space indentation
+            outFile.close(); // Close the file after writing
+        } catch (const exception& e) {
+            json errorResponse;
+            errorResponse["status"] = "error";
+            errorResponse["message"] = "Error writing to config.json: " + string(e.what());
+            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            return;
+        }
+
+        // Send success response
+        json successResponse;
+        successResponse["status"] = "success";
+        successResponse["message"] = "Configuration updated successfully.";
+        response.send(Http::Code::Ok, successResponse.dump());
+    }
+
 
 
     void startWebSocket() 
