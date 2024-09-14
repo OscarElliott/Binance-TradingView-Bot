@@ -1,5 +1,5 @@
 import React from 'react';
-import TradingBotDashboard from './components/bot-dashboard';
+import TradingBotDashboard from './components/add-bots';
 import Sidebar from './components/sidebar';
 
 export default function App() {

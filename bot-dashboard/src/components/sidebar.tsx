@@ -37,8 +37,9 @@ export default function Sidebar() {
           } lg:translate-x-0 lg:static lg:inset-0`}
         >
           <div className="flex items-center justify-center h-16 bg-gray-900">
-            <span className="text-white text-2xl font-semibold">Trading Bot</span>
-            <img src="assets/Bi-Bot.png" alt="Logo" />
+            <span className="text-white text-2xl font-semibold">
+                <img className='logo' src="src/assets/Bi-Bot.png" alt="Logo" />
+            </span>
           </div>
           <nav className="mt-5">
             <a href="#" className="flex items-center px-6 py-2 text-gray-100 hover:bg-gray-700">
