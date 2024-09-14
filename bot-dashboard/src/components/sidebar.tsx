@@ -42,15 +42,12 @@ export default function Sidebar() {
             </span>
           </div>
           <nav className="mt-5">
-            <a href="#" className="flex items-center px-6 py-2 text-gray-100 hover:bg-gray-700">
+            <a href="/" className="flex items-center px-6 py-2 text-gray-100 hover:bg-gray-700">
               <HomeIcon className="h-6 w-6 mr-3" />
               Dashboard
             </a>
             <div>
-              <button 
-                onClick={toggleBotsSection}
-                className="flex items-center px-6 py-2 w-full text-gray-100 hover:bg-gray-700 strong_overide_button" 
-              >
+              <button onClick={toggleBotsSection} className="flex items-center px-6 py-2 w-full text-gray-100 hover:bg-gray-700 strong_overide_button" >
                 <QueueListIcon className="h-6 w-6 mr-3" />
                 Trading Bots
                 <svg
@@ -65,11 +62,11 @@ export default function Sidebar() {
               </button>
               {botsExpanded && (
                 <div className="bg-gray-700 py-2">
-                  <a href="#" className="flex items-center pl-12 py-2 text-sm text-gray-100 hover:bg-gray-600">
+                  <a href="/add-bots" className="flex items-center pl-12 py-2 text-sm text-gray-100 hover:bg-gray-600">
                     <PlusCircleIcon className="h-5 w-5 mr-3" />
                     Add Bot
                   </a>
-                  <a href="#" className="flex items-center pl-12 py-2 text-sm text-gray-100 hover:bg-gray-600">
+                  <a href="/manage-bots" className="flex items-center pl-12 py-2 text-sm text-gray-100 hover:bg-gray-600">
                     <QueueListIcon className="h-5 w-5 mr-3" />
                     Manage Bots
                   </a>
@@ -80,7 +77,7 @@ export default function Sidebar() {
                 </div>
               )}
             </div>
-            <a href="#" className="flex items-center px-6 py-2 text-gray-100 hover:bg-gray-700">
+            <a href="/settings" className="flex items-center px-6 py-2 text-gray-100 hover:bg-gray-700">
               <CogIcon className="h-6 w-6 mr-3" />
               Settings
             </a>
