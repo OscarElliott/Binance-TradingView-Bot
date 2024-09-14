@@ -6,15 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
+import { CustomSlider } from "@/components/ui/custom-slider"
 
 interface Bot {
   id: string;
   type: string;
   tradingPair: string;
   leverage: number;
-  apiKey: string;
-  apiSecret: string;
 }
 
 const saveBotToAPI = async (bot: Bot): Promise<Bot> => {
@@ -46,8 +44,6 @@ export default function TradingBotDashboard() {
     type: 'spot',
     tradingPair: '',
     leverage: 1,
-    apiKey: '',
-    apiSecret: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,8 +81,6 @@ export default function TradingBotDashboard() {
         type: 'spot',
         tradingPair: '',
         leverage: 1,
-        apiKey: '',
-        apiSecret: '',
       });
     } catch (err) {
       setError('Failed to save bot. Please try again.');
@@ -131,20 +125,9 @@ export default function TradingBotDashboard() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="tradingPair" className="text-gray-200">Trading Pair</Label>
-                <Input
-                  id="tradingPair"
-                  name="tradingPair"
-                  value={newBot.tradingPair}
-                  onChange={handleInputChange}
-                  required
-                  className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
-                />
-              </div>
-              <div>
                 <Label htmlFor="leverage" className="text-gray-200">Leverage</Label>
                 <div className="flex items-center space-x-4">
-                  <Slider
+                  <CustomSlider
                     id="leverageSlider"
                     min={1}
                     max={100}
@@ -164,28 +147,17 @@ export default function TradingBotDashboard() {
                     className="w-20 bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
                   />
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="apiKey" className="text-gray-200">API Key</Label>
+                <div>
+                <Label htmlFor="tradingPair" className="text-gray-200">Trading Pair</Label>
                 <Input
-                  id="apiKey"
-                  name="apiKey"
-                  value={newBot.apiKey}
+                  id="tradingPair"
+                  name="tradingPair"
+                  value={newBot.tradingPair}
                   onChange={handleInputChange}
                   required
                   className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
                 />
-              </div>
-              <div>
-                <Label htmlFor="apiSecret" className="text-gray-200">API Secret</Label>
-                <Input
-                  id="apiSecret"
-                  name="apiSecret"
-                  value={newBot.apiSecret}
-                  onChange={handleInputChange}
-                  required
-                  className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
-                />
+                </div>
               </div>
               <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
                 {isLoading ? 'Saving...' : 'Save Bot'}
@@ -212,7 +184,6 @@ export default function TradingBotDashboard() {
                     <h3 className="font-bold text-gray-100">{bot.type}</h3>
                     <p className="text-gray-300">Trading Pair: {bot.tradingPair}</p>
                     <p className="text-gray-300">Leverage: {bot.leverage}</p>
-                    <p className="text-gray-300">API Key: {bot.apiKey}</p>
                   </li>
                 ))}
               </ul>
