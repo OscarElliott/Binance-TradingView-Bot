@@ -92,7 +92,7 @@ export default function TradingBotDashboard() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
       <div className="container mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-100">Trading Bot Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-100">Add New Trading Bot</h1>
         
         <Card className="mb-8 bg-gray-800 border-gray-700">
           <CardHeader>
