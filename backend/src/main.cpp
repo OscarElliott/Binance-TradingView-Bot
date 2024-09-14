@@ -28,6 +28,10 @@ public:
 
     void start() 
     {
+        // Start WebSocket connection in a separate thread
+        wsThread = thread(&BackendServer::startWebSocket, this);
+
+        // Start the HTTP server
         httpEndpoint->setHandler(router.handler());
         httpEndpoint->serve();
     }
@@ -35,15 +39,21 @@ public:
     void shutdown() 
     {
         httpEndpoint->shutdown();
+        if (wsThread.joinable()) {
+            wsThread.join();
+        }
     }
 
 private:
     unordered_map<string, Bot> bots; // Store bots by their ID
+    WebSocketHandler wsHandler;      // WebSocket handler
+    thread wsThread; 
 
     void setupRoutes() 
     {
         using namespace Rest;
         Routes::Post(router, "/webhook", Routes::bind(&BackendServer::handleWebhook, this));
+        Routes::Post(router, "/addbot", Routes::bind(&BackendServer::handleAddBot, this));
     }
 
     void loadBotsFromConfig() 
@@ -90,6 +100,58 @@ private:
         {
             response.send(Http::Code::Not_Found, "Bot not found");
         }
+    }
+
+    void handleAddBot(const Rest::Request& request, Http::ResponseWriter response) 
+    {
+        try 
+        {
+            // Parse the JSON body
+            auto body = request.body();
+            json botData = json::parse(body);
+
+            // Extract the bot details
+            string id = botData["id"];
+            string botType = botData["type"];
+            string tradingPair = botData["tradingPair"];
+            int leverage = botData["leverage"];
+            string apiKey = botData["apiKey"];
+            string apiSecret = botData["apiSecret"];
+
+            // Print or process the bot data for testing                            <-----------TESTING OUTPUT------------>
+            cout << "Received new bot configuration:" << endl;
+            cout << "id: " << id << endl;
+            cout << "Type: " << botType << endl;
+            cout << "Trading Pair: " << tradingPair << endl;
+            cout << "Leverage: " << leverage << endl;
+            cout << "API Key: " << apiKey << endl;
+            cout << "API Secret: " << apiSecret << endl;   //                       <-----------END TEST OUTPUT------------>                         
+
+            Bot new_bot = new Bot(id, botType, tradingPair, leverage, apiKey, apiSecret);
+            bots[id] = new_bot;
+
+            // Send a successful response back to the client
+            json responseData;
+            responseData["status"] = "success";
+            responseData["message"] = "Bot configuration saved successfully.";
+
+            response.send(Http::Code::Ok, responseData.dump());
+
+        } 
+        catch (const exception& ex) 
+        {
+            json errorData;
+            errorData["status"] = "error";
+            errorData["message"] = ex.what();
+
+            response.send(Http::Code::Bad_Request, errorData.dump());
+        }
+    }
+
+    void startWebSocket() 
+    {
+        // Connect to the WebSocket server 
+        wsHandler.connect("ws://localhost:9002");
     }
 
     shared_ptr<Http::Endpoint> httpEndpoint;
