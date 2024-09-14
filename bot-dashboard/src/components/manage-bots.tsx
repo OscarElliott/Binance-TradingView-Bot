@@ -14,17 +14,26 @@ interface Bot {
 }
 
 const fetchBotsFromAPI = async (): Promise<Bot[]> => {
-  try {
-    const response = await fetch('http://localhost:9080/getbots');
-    if (!response.ok) {
-      throw new Error('Failed to fetch bots');
+    try {
+      const response = await fetch('http://localhost:9080/getbots');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bots');
+      }
+  
+      // Parse the response JSON
+      const data = await response.json();
+  
+      // Check if the status is success and if bots are returned
+      if (data.status === 'success' && Array.isArray(data.bots)) {
+        return data.bots as Bot[];
+      } else {
+        throw new Error('Invalid response structure');
+      }
+    } catch (error) {
+      console.error('Error fetching bots:', error);
+      throw error;
     }
-    const bots = await response.json();
-    return bots;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
 };
 
 const saveBotToAPI = async (bot: Bot): Promise<Bot> => {
