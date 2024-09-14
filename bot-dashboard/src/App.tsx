@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TradingBotDashboard from './components/add-bots';
 import Sidebar from './components/sidebar';
-import ManageBots from './components/manage-bots'; // Import other pages as needed
+import ManageBots from './components/manage-bots';
+import Settings from './components/settings';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Route path="/" element={<h1>Dashboard</h1>} />
             <Route path="/add-bots" element={<TradingBotDashboard />} />
             <Route path="/manage-bots" element={<ManageBots />} />
+            <Route path="/settings" element={<Settings />} />
             {/* Add more routes for other components */}
           </Routes>
         </main>
