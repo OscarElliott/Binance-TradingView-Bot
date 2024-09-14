@@ -81,4 +81,24 @@ private:
 
         return string(mdString);
     }
+
+    string getId()
+    {
+        return id;
+    }
+
+    string getType()
+    {
+        return type;
+    }
+
+    string getTradingPair()
+    {
+        return TradingPair;
+    }
+
+    int getLeverage()
+    {
+        return leverage;
+    }
 }

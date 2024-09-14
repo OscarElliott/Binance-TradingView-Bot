@@ -54,6 +54,7 @@ private:
         using namespace Rest;
         Routes::Post(router, "/webhook", Routes::bind(&BackendServer::handleWebhook, this));
         Routes::Post(router, "/addbot", Routes::bind(&BackendServer::handleAddBot, this));
+        Routes::Post(router, "/getbots", Routes::bind(&BackendServer::handleFetchBots, this));
     }
 
     void loadBotsFromConfig() 
@@ -136,7 +137,6 @@ private:
             responseData["message"] = "Bot configuration saved successfully.";
 
             response.send(Http::Code::Ok, responseData.dump());
-
         } 
         catch (const exception& ex) 
         {
@@ -147,6 +147,42 @@ private:
             response.send(Http::Code::Bad_Request, errorData.dump());
         }
     }
+
+    void handleFetchBots(const Rest::Request& request, Http::ResponseWriter response)
+    {
+        try 
+        {
+            json botsList = json::array();
+
+            // Iterate over the map of bots and add their data to the JSON response
+            for (const auto& [id, bot] : bots) 
+            {
+                json botData;
+                botData["id"] = bot.getId();  // Assuming you have a getId() method in Bot class
+                botData["type"] = bot.getType();  // Assuming you have a getType() method
+                botData["trading_pair"] = bot.getTradingPair();  // Assuming you have a getTradingPair() method
+                botData["leverage"] = bot.getLeverage();  // Assuming you have a getLeverage() method
+
+                botsList.push_back(botData);
+            }
+
+            json responseData;
+            responseData["status"] = "success";
+            responseData["bots"] = botsList;
+
+            // Send response back to client
+            response.send(Http::Code::Ok, responseData.dump());
+        } 
+        catch (const exception& ex) 
+        {
+            json errorData;
+            errorData["status"] = "error";
+            errorData["message"] = ex.what();
+
+            response.send(Http::Code::Internal_Server_Error, errorData.dump());
+        }
+    }
+
 
     void startWebSocket() 
     {
