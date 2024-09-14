@@ -1,4 +1,5 @@
 {
+    "Email": "Your Email",
     "binance_api_key": "your_api_key",
     "binance_api_secret": "your_api_secret",
     "webhook_port": 9080,
