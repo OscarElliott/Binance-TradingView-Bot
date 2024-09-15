@@ -12,7 +12,6 @@ using namespace web;
 using namespace std;
 using namespace web::http;
 using namespace web::http::client;
-using json = nlohmann::json;
 
 class Bot 
 {
@@ -27,13 +26,33 @@ public:
     Bot(const string & id, const string & type, const string & tradingPair, int leverage, const string & apiKey, string & apiSecret)
         : id(id), type(type), tradingPair(tradingPair), leverage(leverage), apiKey(apiKey), apiSecret(apiSecret) {}
     
-    void handleWebhook(const json& webhookData, string & apiSecret)
+    void handleWebhook(const nlohmann::json& webhookData, string & apiSecret)
     {
         string action = webhookData["action"];
         double quantity = webhookData["quantity"];
         string orderType = webhookData["orderType"];
         double price = webhookData["price"];
         placeOrder(action, quantity, orderType, price, apiSecret);
+    }
+
+    string getId()
+    {
+        return id;
+    }
+
+    string getType()
+    {
+        return type;
+    }
+
+    string getTradingPair()
+    {
+        return tradingPair;
+    }
+
+    int getLeverage()
+    {
+        return leverage;
     }
 
 private:
@@ -81,24 +100,4 @@ private:
 
         return string(mdString);
     }
-
-    string getId()
-    {
-        return id;
-    }
-
-    string getType()
-    {
-        return type;
-    }
-
-    string getTradingPair()
-    {
-        return TradingPair;
-    }
-
-    int getLeverage()
-    {
-        return leverage;
-    }
-}
+};

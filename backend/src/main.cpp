@@ -7,6 +7,7 @@
 #include <fstream>
 #include <unordered_map>
 #include "bot.h"
+#include "WebSocketServer.h"
 
 using namespace Pistache;
 using namespace std;
@@ -45,8 +46,8 @@ public:
     }
 
 private:
-    unordered_map<string, Bot> bots; // Store bots by their ID
-    WebSocketHandler wsHandler;      // WebSocket handler
+    unordered_map<string, Bot*> bots; // Store bots via ptr by their ID
+    WebSocketServer wsHandler;      // WebSocket handler
     thread wsThread; 
 
     void setupRoutes() 
@@ -77,8 +78,8 @@ private:
                 string tradingPair = botConfig["trading_pair"];
                 int leverage = botConfig.value("leverage", 1);  // Default to 1 if not provided
 
-                Bot bot(id, type, tradingPair, leverage, apiKey, apiSecret);
-                bots[id] = bot;
+                Bot* load_bot = new Bot(id, type, tradingPair, leverage, apiKey, apiSecret);
+                bots[id] = load_bot;
             }
 
             cout << "Bots loaded successfully." << endl;
@@ -96,7 +97,7 @@ private:
         // if bot exists get it to handle the incoming request
         if (bots.find(botId) != bots.end()) 
         {
-            bots[botId].handleWebhook(webhookData, bots[botId].apiSecret);
+            bots[botId]->handleWebhook(webhookData, bots[botId]->apiSecret);
             response.send(Http::Code::Ok, "Webhook handled");
         } 
         else 
@@ -130,7 +131,7 @@ private:
             cout << "API Key: " << apiKey << endl;
             cout << "API Secret: " << apiSecret << endl;   //                       <-----------END TEST OUTPUT------------>                         
 
-            Bot new_bot = new Bot(id, botType, tradingPair, leverage, apiKey, apiSecret);
+            Bot* new_bot = new Bot(id, botType, tradingPair, leverage, apiKey, apiSecret);
             bots[id] = new_bot;
 
             // Send a successful response back to the client
@@ -176,7 +177,7 @@ private:
             config["bots"] = json::array();
         }
 
-        json& bots = config["bots"];
+        json& bots = newConfig["bots"];
 
         // Iterate over each bot in the newConfig
         for (const auto& newBot : newConfig["bots"]) 
