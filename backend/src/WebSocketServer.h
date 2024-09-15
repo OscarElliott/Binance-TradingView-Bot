@@ -1,28 +1,33 @@
 #ifndef WEBSOCKETSERVER_H
 #define WEBSOCKETSERVER_H
 
-#include <websocketpp/server.hpp>
-#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/client.hpp>
+#include <websocketpp/config/asio_no_tls_client.hpp>
 #include <iostream>
+#include <string>
+#include <functional>
 
-using websocketpp::server;
-using websocketpp::connection_hdl;
-using namespace std;
+// Define a type for the client
+typedef websocketpp::client<websocketpp::config::asio_client> ws_client;
 
-class WebSocketServer {
+class WebSocketServer 
+{
 public:
-    // Constructor
+    // Constructor to initialize the WebSocket client
     WebSocketServer();
 
-    // Start the WebSocket server
-    void start();
+    // Method to connect to a WebSocket server
+    void connect(const std::string& uri);
 
 private:
-    // Handler for incoming messages
-    void on_message(connection_hdl hdl, server<websocketpp::config::asio>::message_ptr msg);
+    // WebSocket client instance
+    ws_client m_client;
 
-    // WebSocket server instance
-    server<websocketpp::config::asio> m_server;
+    // Handlers for WebSocket events
+    void on_open(websocketpp::connection_hdl hdl);
+    void on_fail(websocketpp::connection_hdl hdl);
+    void on_close(websocketpp::connection_hdl hdl);
+    void on_message(websocketpp::connection_hdl hdl, ws_client::message_ptr msg);
 };
 
 #endif // WEBSOCKETSERVER_H

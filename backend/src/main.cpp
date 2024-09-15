@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
+
 #include "bot.h"
 #include "WebSocketServer.h"
 
@@ -177,10 +178,10 @@ private:
             config["bots"] = json::array();
         }
 
-        json& bots = newConfig["bots"];
+        json& bots = config["bots"];
 
         // Iterate over each bot in the newConfig
-        for (const auto& newBot : newConfig["bots"]) 
+        for (const auto& newBot : config["bots"]) 
         {
             string newBotId = newBot.value("id", "");
             bool botFound = false;
@@ -221,10 +222,10 @@ private:
             for (const auto& [id, bot] : bots) 
             {
                 json botData;
-                botData["id"] = bot.getId();  // Assuming you have a getId() method in Bot class
-                botData["type"] = bot.getType();  // Assuming you have a getType() method
-                botData["trading_pair"] = bot.getTradingPair();  // Assuming you have a getTradingPair() method
-                botData["leverage"] = bot.getLeverage();  // Assuming you have a getLeverage() method
+                botData["id"] = bot->getId();  // Assuming you have a getId() method in Bot class
+                botData["type"] = bot->getType();  // Assuming you have a getType() method
+                botData["trading_pair"] = bot->getTradingPair();  // Assuming you have a getTradingPair() method
+                botData["leverage"] = bot->getLeverage();  // Assuming you have a getLeverage() method
 
                 botsList.push_back(botData);
             }

@@ -1,36 +1,64 @@
-#include <websocketpp/server.hpp>
-#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/client.hpp>
+#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <iostream>
+#include <string>
+#include <functional>
+#include <nlohmann/json.hpp>
+#include "WebSocketServer.h"
 
-using websocketpp::server;
-using websocketpp::connection_hdl;
+using namespace websocketpp;
 using namespace std;
 
-class WebSocketServer {
-public:
-    WebSocketServer() {
-        // Initialize Asio
-        m_server.init_asio();
+// Define a type for the client
+typedef client<config::asio_client> client;
 
-        // Set the message handler
-        m_server.set_message_handler(bind(&WebSocketServer::on_message, this, _1, _2));
+WebSocketServer::WebSocketServer() 
+{
+    m_client.init_asio();
+    m_client.set_message_handler(bind(&WebSocketServer::on_message, this, placeholders::_1, placeholders::_2));
+}
+
+void WebSocketServer::connect(const string& uri) 
+{
+    try 
+    {
+        m_client.set_open_handler(bind(&WebSocketServer::on_open, this, placeholders::_1));
+        m_client.set_fail_handler(bind(&WebSocketServer::on_fail, this, placeholders::_1));
+        m_client.set_close_handler(bind(&WebSocketServer::on_close, this, placeholders::_1));
+
+        websocketpp::lib::error_code ec;
+        client::connection_ptr con = m_client.get_connection(uri, ec);
+        if (ec) {
+            cerr << "Connection error: " << ec.message() << endl;
+            return;
+        }
+
+        m_client.connect(con);
+        m_client.run();
+    } 
+    catch (const exception& e) 
+    {
+        cerr << "Error: " << e.what() << endl;
     }
+}
 
-    void start() {
-        m_server.listen(9002); // Listen on port 9002
-        m_server.start_accept();
-        m_server.run();
-    }
+void WebSocketServer::on_open(connection_hdl hdl) 
+{
+    cout << "Connected!" << endl;
+}
 
-private:
-    void on_message(connection_hdl hdl, server<websocketpp::config::asio> ::message_ptr msg) {
-        // Handle incoming messages
-        cout << "Received message: " << msg->get_payload() << endl;
-    }
+void WebSocketServer::on_fail(connection_hdl hdl) 
+{
+    cout << "Connection failed!" << endl;
+}
 
-    server<websocketpp::config::asio> m_server;
-};
+void WebSocketServer::on_close(connection_hdl hdl) 
+{
+    cout << "Connection closed!" << endl;
+}
 
-void startWebSocket() {
-    WebSocketServer wsServer;
-    wsServer.start();
+void WebSocketServer::on_message(connection_hdl hdl, client::message_ptr msg) 
+{
+    cout << "Received message: " << msg->get_payload() << endl;
+    // Placeholder for handling message
 }

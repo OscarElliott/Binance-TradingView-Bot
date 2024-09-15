@@ -20,15 +20,15 @@ public:
     int leverage;
     std::string apiKey;
     std::string apiSecret;
+    std::string getId();
+    std::string getType();
+    std::string getTradingPair();
+    int getLeverage();
 
 private:
     // Private methods
     void placeOrder(const std::string & action, double quantity, const std::string & orderType, double price, const std::string & apiSecret);
     std::string signRequest(const std::string & query, const std::string & secret);
-    std::string getId();
-    std::string getType();
-    std::string getTradingPair();
-    int getLeverage();
 };
 
 #endif
