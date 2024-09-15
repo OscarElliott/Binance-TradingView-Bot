@@ -3,6 +3,7 @@ import TradingBotDashboard from './components/add-bots';
 import Sidebar from './components/sidebar';
 import ManageBots from './components/manage-bots';
 import Settings from './components/settings';
+import UserDashboard from './components/dashboard';
 
 export default function App() {
   return (
@@ -11,7 +12,7 @@ export default function App() {
         <Sidebar />
         <main className="flex-1 min-h-screen p-4">
           <Routes>
-          <Route path="/" element={<h1>Dashboard</h1>} />
+          <Route path="/" element={<UserDashboard />} />
             <Route path="/add-bots" element={<TradingBotDashboard />} />
             <Route path="/manage-bots" element={<ManageBots />} />
             <Route path="/settings" element={<Settings />} />
