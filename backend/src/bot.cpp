@@ -15,8 +15,8 @@ using namespace web::http::client;
 using namespace std;
 using nlohmann::json;
 
-Bot::Bot(const std::string &  id, const std::string & type, const std::string & tradingPair, const std::string &  side, const std::string & baseSizeType, const std::string & orderType, int baseOrderSize, int leverage, const std::string &  UserApiKey, const std::string &  UserSecret)
-    : id(id), type(type), tradingPair(tradingPair), leverage(leverage), apiKey(UserApiKey), apiSecret(UserSecret) {}
+Bot::Bot(const std::string &id, const std::string &type, const std::string &tradingPair, const std::string &side, const std::string &baseSizeType, const std::string &orderType, int baseOrderSize, int leverage, const std::string &UserApiKey, const std::string &UserSecret)
+    : id(id), type(type), tradingPair(tradingPair), side(side), baseSizeType(baseSizeType), orderType(orderType), baseOrderSize(baseOrderSize), leverage(leverage), apiKey(UserApiKey), apiSecret(UserSecret) {}
 
 
 // THIS IS ONLY PARTIALLY IMPLEMENTED AT THIS POINT
@@ -71,7 +71,7 @@ int Bot::getLeverage() {
 }
 
 int Bot::getBaseOrderSize() {
-    return leverage;
+    return baseOrderSize;
 }
 
 void Bot::placeSpotOrder(const string &side, const string &orderType, double price) {
@@ -147,6 +147,7 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     if (response.status_code() == status_codes::OK) {
         cout << response.extract_json().get().serialize() << endl;
     } else {
+        cout << "response hit error" << endl;
         cerr << "Error: " << response.status_code() << endl;
     }
 }
