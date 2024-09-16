@@ -269,7 +269,7 @@ private:
                 json botData;
                 botData["id"] = bot->getId();  // Assuming you have a getId() method in Bot class
                 botData["type"] = bot->getType();  // Assuming you have a getType() method
-                botData["trading_pair"] = bot->getTradingPair();  // Assuming you have a getTradingPair() method
+                botData["tradingPair"] = bot->getTradingPair();  // Assuming you have a getTradingPair() method
                 botData["leverage"] = bot->getLeverage();  // Assuming you have a getLeverage() method
 
                 botsList.push_back(botData);
@@ -280,6 +280,7 @@ private:
             responseData["bots"] = botsList;
 
             // Send response back to client
+            addCORSHeaders(response);
             response.send(Http::Code::Ok, responseData.dump());
         } 
         catch (const exception& ex) 

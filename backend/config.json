@@ -17,7 +17,7 @@
         },
         {
             "id": "TESTBOT1",
-            "leverage": 73,
+            "leverage": 13,
             "tradingPair": "BTCUSDT",
             "type": "futures"
         }

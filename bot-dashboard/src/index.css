@@ -145,6 +145,11 @@ button:focus-visible {
   }
 }
 
+.BOT_IMG {
+  height: 40px;
+  width: auto;
+}
+
 @layer base {
   * {
     @apply border-border;
