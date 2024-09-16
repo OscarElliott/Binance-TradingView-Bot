@@ -356,7 +356,7 @@ private:
             config["binance_api_key"] = newConfig["binance_api_key"];
             UserApiKey = newConfig["binance_api_key"];
         }
-        if (newConfig.contains("binance_api_secret")) {
+        if (newConfig.contains("binance_api_secret") && newConfig["binance_api_secret"] != "***************") {
             config["binance_api_secret"] = newConfig["binance_api_secret"];
             UserSecret = newConfig["binance_api_secret"];
         }
