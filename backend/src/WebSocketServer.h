@@ -7,8 +7,8 @@
 #include <string>
 #include <functional>
 
-// Define a type for the client
-typedef websocketpp::client<websocketpp::config::asio_client> ws_client;
+// Define a type for the websocket client
+typedef websocketpp::client<websocketpp::config::asio_client> websocket_client;
 
 class WebSocketServer 
 {
@@ -21,13 +21,13 @@ public:
 
 private:
     // WebSocket client instance
-    ws_client m_client;
+    websocket_client m_client;
 
     // Handlers for WebSocket events
     void on_open(websocketpp::connection_hdl hdl);
     void on_fail(websocketpp::connection_hdl hdl);
     void on_close(websocketpp::connection_hdl hdl);
-    void on_message(websocketpp::connection_hdl hdl, ws_client::message_ptr msg);
+    void on_message(websocketpp::connection_hdl hdl, websocket_client::message_ptr msg);
 };
 
 #endif // WEBSOCKETSERVER_H

@@ -2,19 +2,25 @@
     "Email": "Your Email",
     "binance_api_key": "your_api_key",
     "binance_api_secret": "your_api_secret",
-    "webhook_port": 9080,
     "bots": [
         {
             "id": "spot_bot_1",
-            "type": "spot",
+            "leverage": 1,
             "trading_pair": "BTCUSDT",
-            "leverage": 1
+            "type": "spot"
         },
         {
             "id": "futures_bot_1",
-            "type": "futures",
+            "leverage": 2,
             "trading_pair": "BTCUSDT",
-            "leverage": 2
+            "type": "futures"
+        },
+        {
+            "id": "TESTBOT1",
+            "leverage": 73,
+            "tradingPair": "BTCUSDT",
+            "type": "futures"
         }
-    ]
+    ],
+    "webhook_port": 9080
 }

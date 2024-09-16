@@ -31,7 +31,7 @@ public:
     void start() 
     {
         // Start WebSocket connection in a separate thread
-        wsThread = thread(&BackendServer::startWebSocket, this);
+        //wsThread = thread(&BackendServer::startWebSocket, this);
 
         // Start the HTTP server
         httpEndpoint->setHandler(router.handler());
@@ -49,13 +49,17 @@ public:
 private:
     unordered_map<string, Bot*> bots; // Store bots via ptr by their ID
     WebSocketServer wsHandler;      // WebSocket handler
-    thread wsThread; 
+    thread wsThread;
+    string UserApiKey;
+    string UserSecret;
+
 
     void setupRoutes() 
     {
         using namespace Rest;
         Routes::Post(router, "/webhook", Routes::bind(&BackendServer::handleWebhook, this));
         Routes::Post(router, "/addbot", Routes::bind(&BackendServer::handleAddBot, this));
+        Routes::Options(router, "/addbot", Routes::bind(&BackendServer::handleOptionsRequest, this));
         Routes::Post(router, "/getbots", Routes::bind(&BackendServer::handleFetchBots, this));
         Routes::Post(router, "/getSettings", Routes::bind(&BackendServer::fetchUserConfig, this));
         Routes::Post(router, "/postSettings", Routes::bind(&BackendServer::updateUserConfig, this));
@@ -68,8 +72,8 @@ private:
         {
             json configData;
             configFile >> configData;
-            string apiKey = configData["binance_api_key"];
-            string apiSecret = configData["binance_api_secret"];
+            UserApiKey = configData["binance_api_key"];
+            UserSecret = configData["binance_api_secret"];
 
             // Load each bot from the config
             for (const auto& botConfig : configData["bots"]) 
@@ -79,7 +83,7 @@ private:
                 string tradingPair = botConfig["trading_pair"];
                 int leverage = botConfig.value("leverage", 1);  // Default to 1 if not provided
 
-                Bot* load_bot = new Bot(id, type, tradingPair, leverage, apiKey, apiSecret);
+                Bot* load_bot = new Bot(id, type, tradingPair, leverage, UserApiKey, UserSecret);
                 bots[id] = load_bot;
             }
 
@@ -91,6 +95,19 @@ private:
         }
     }
 
+    void addCORSHeaders(Http::ResponseWriter& writer) 
+    {
+        writer.headers().add<Http::Header::AccessControlAllowOrigin>("*"); // Allow all origins
+        writer.headers().add<Http::Header::AccessControlAllowMethods>("GET, POST, OPTIONS"); // Allow specific methods
+        writer.headers().add<Http::Header::AccessControlAllowHeaders>("Content-Type, Authorization"); // Allow specific headers
+    }
+
+    void handleOptionsRequest(const Rest::Request&, Http::ResponseWriter writer) 
+    {
+        addCORSHeaders(writer);
+        writer.send(Http::Code::Ok, ""); // Respond to OPTIONS request
+    }
+
     void handleWebhook(const Rest::Request &request, Http::ResponseWriter response) 
     {
         auto webhookData = json::parse(request.body());
@@ -98,7 +115,7 @@ private:
         // if bot exists get it to handle the incoming request
         if (bots.find(botId) != bots.end()) 
         {
-            bots[botId]->handleWebhook(webhookData, bots[botId]->apiSecret);
+            bots[botId]->handleWebhook(webhookData);
             response.send(Http::Code::Ok, "Webhook handled");
         } 
         else 
@@ -109,6 +126,17 @@ private:
 
     void handleAddBot(const Rest::Request& request, Http::ResponseWriter response) 
     {
+        addCORSHeaders(response);
+
+        cout << "Received request body: " << request.body() << endl;
+
+        if (request.body().empty()) 
+        {
+            cout << "ERROR: Empty body for Bot" << endl;
+            response.send(Http::Code::Bad_Request, "Request body is empty");
+            return;
+        }
+
         try 
         {
             // Parse the JSON body
@@ -120,8 +148,8 @@ private:
             string botType = botData["type"];
             string tradingPair = botData["tradingPair"];
             int leverage = botData["leverage"];
-            string apiKey = botData["apiKey"];
-            string apiSecret = botData["apiSecret"];
+            string apiKey = UserApiKey;
+            string apiSecret = UserSecret;
 
             // Print or process the bot data for testing                            <-----------TESTING OUTPUT------------>
             cout << "Received new bot configuration:" << endl;
@@ -135,6 +163,74 @@ private:
             Bot* new_bot = new Bot(id, botType, tradingPair, leverage, apiKey, apiSecret);
             bots[id] = new_bot;
 
+            // add bot to static config file
+            // Open the JSON file to read current configuration
+            ifstream file("../config.json");
+            if (!file.is_open()) {
+                json errorResponse;
+                errorResponse["status"] = "error";
+                errorResponse["message"] = "Could not open config.json file.";
+                response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+                return;
+            }
+
+            json config;
+            try {
+                file >> config;
+                file.close(); // Close the file after reading
+            } catch (const json::parse_error& e) {
+                json errorResponse;
+                errorResponse["status"] = "error";
+                errorResponse["message"] = "Error parsing config.json: " + string(e.what());
+                response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+                return;
+            }
+
+            if (!config.contains("bots") || !config["bots"].is_array()) 
+            {
+                config["bots"] = json::array();
+            }
+            json& bots = config["bots"];
+            
+            string newBotId = id;
+            bool botFound = false;
+
+            // Update existing bot or add new bot
+            for (auto& bot : bots) 
+            {
+                if (bot["id"] == newBotId) 
+                {
+                    bot = botData;
+                    botFound = true;
+                    break;
+                }
+            }
+
+            // If bot was not found in the existing list, add it
+            if (!botFound) {
+                bots.push_back(botData);
+            }
+
+            cout << config << endl;
+
+            // Write the updated configuration back to the file
+            ofstream outFile("../config.json");
+            if (!outFile.is_open()) 
+            {
+                cout << "file open errer" << endl;
+                json errorResponse;
+                errorResponse["status"] = "error";
+                errorResponse["message"] = "Could not open config.json file for writing.";
+                response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
+            }
+            try {
+                // Write the JSON data to the file
+                outFile << config.dump(4); // Pretty print with 4 spaces
+                outFile.close(); // Close the file after writing
+            } catch (const std::exception& e) {
+                cout << "file writing errer" << endl;
+                cerr << "Error writing to config.json: " << e.what() << endl;
+            }
             // Send a successful response back to the client
             json responseData;
             responseData["status"] = "success";
@@ -147,68 +243,8 @@ private:
             json errorData;
             errorData["status"] = "error";
             errorData["message"] = ex.what();
-
+            cout << errorData << endl;
             response.send(Http::Code::Bad_Request, errorData.dump());
-        }
-        // add bot to static config file
-        // Open the JSON file to read current configuration
-        ifstream file("config.json");
-        if (!file.is_open()) {
-            json errorResponse;
-            errorResponse["status"] = "error";
-            errorResponse["message"] = "Could not open config.json file.";
-            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
-            return;
-        }
-
-        json config;
-        try {
-            file >> config;
-            file.close(); // Close the file after reading
-        } catch (const json::parse_error& e) {
-            json errorResponse;
-            errorResponse["status"] = "error";
-            errorResponse["message"] = "Error parsing config.json: " + string(e.what());
-            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
-            return;
-        }
-
-        if (!config.contains("bots") || !config["bots"].is_array()) 
-        {
-            config["bots"] = json::array();
-        }
-
-        json& bots = config["bots"];
-
-        // Iterate over each bot in the newConfig
-        for (const auto& newBot : config["bots"]) 
-        {
-            string newBotId = newBot.value("id", "");
-            bool botFound = false;
-
-            // Update existing bot or add new bot
-            for (auto& bot : bots) {
-                if (bot["id"] == newBotId) {
-                    bot = newBot; // Replace with new data
-                    botFound = true;
-                    break;
-                }
-            }
-
-            // If bot was not found in the existing list, add it
-            if (!botFound) {
-                bots.push_back(newBot);
-            }
-        }
-
-        // Write the updated configuration back to the file
-        ofstream outFile("config.json");
-        if (!outFile.is_open()) 
-        {
-            json errorResponse;
-            errorResponse["status"] = "error";
-            errorResponse["message"] = "Could not open config.json file for writing.";
-            response.send(Http::Code::Internal_Server_Error, errorResponse.dump());
         }
     }
 

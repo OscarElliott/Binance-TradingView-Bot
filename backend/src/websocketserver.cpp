@@ -9,8 +9,8 @@
 using namespace websocketpp;
 using namespace std;
 
-// Define a type for the client
-typedef client<config::asio_client> client;
+// Define a type for the websocket client
+typedef websocketpp::client<config::asio_client> websocket_client;
 
 WebSocketServer::WebSocketServer() 
 {
@@ -27,7 +27,7 @@ void WebSocketServer::connect(const string& uri)
         m_client.set_close_handler(bind(&WebSocketServer::on_close, this, placeholders::_1));
 
         websocketpp::lib::error_code ec;
-        client::connection_ptr con = m_client.get_connection(uri, ec);
+        websocket_client::connection_ptr con = m_client.get_connection(uri, ec); // Explicitly refer to websocket_client::connection_ptr
         if (ec) {
             cerr << "Connection error: " << ec.message() << endl;
             return;
@@ -36,7 +36,7 @@ void WebSocketServer::connect(const string& uri)
         m_client.connect(con);
         m_client.run();
     } 
-    catch (const exception& e) 
+    catch (const std::exception& e) 
     {
         cerr << "Error: " << e.what() << endl;
     }
@@ -57,7 +57,7 @@ void WebSocketServer::on_close(connection_hdl hdl)
     cout << "Connection closed!" << endl;
 }
 
-void WebSocketServer::on_message(connection_hdl hdl, client::message_ptr msg) 
+void WebSocketServer::on_message(connection_hdl hdl, websocket_client::message_ptr msg) 
 {
     cout << "Received message: " << msg->get_payload() << endl;
     // Placeholder for handling message

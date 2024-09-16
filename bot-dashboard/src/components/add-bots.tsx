@@ -17,16 +17,20 @@ interface Bot {
 
 const saveBotToAPI = async (bot: Bot): Promise<Bot> => {
   try {
+    console.log('Sending bot data:', bot);
     const response = await fetch('http://localhost:9080/addbot', {
       method: 'POST',
+      mode: "cors",
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(bot),
     });
+    console.log('Final result:', response);
 
     if (!response.ok) {
-      throw new Error('Failed to save bot');
+      const errorText = await response.text(); // Retrieve error text
+      throw new Error(`Failed to save bot: ${errorText}`);
     }
 
     const savedBot = await response.json();
@@ -167,29 +171,6 @@ export default function TradingBotDashboard() {
         </Card>
 
         {error && <p className="text-red-400 mb-4">{error}</p>}
-
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-100">Saved Bots</CardTitle>
-            <CardDescription className="text-gray-400">List of all your saved trading bots.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {bots.length === 0 ? (
-              <p className="text-gray-400">No bots saved yet.</p>
-            ) : (
-              <ul className="space-y-4">
-                {bots.map(bot => (
-                  <li key={bot.id} className="border border-gray-700 p-4 rounded-md bg-gray-750">
-                    <p className="text-gray-300">ID: {bot.id}</p>
-                    <h3 className="font-bold text-gray-100">{bot.type}</h3>
-                    <p className="text-gray-300">Trading Pair: {bot.tradingPair}</p>
-                    <p className="text-gray-300">Leverage: {bot.leverage}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
