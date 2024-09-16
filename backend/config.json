@@ -4,23 +4,25 @@
     "binance_api_secret": "ENTER YOUR API SECRET",
     "bots": [
         {
+            "baseOrderSize": 3,
+            "baseSizeType": "USD",
             "id": "spot_bot_1",
             "leverage": 1,
+            "orderType": "LIMIT",
+            "side": "BUY",
             "tradingPair": "BTCUSDT",
             "type": "spot"
         },
         {
-            "id": "futures_bot_1",
-            "leverage": 2,
-            "tradingPair": "BTCUSDT",
-            "type": "futures"
-        },
-        {
-            "id": "TESTBOT1",
-            "leverage": 13,
-            "tradingPair": "BTCUSDT",
+            "baseOrderSize": 95,
+            "baseSizeType": "Percentage",
+            "id": "Example Bot",
+            "leverage": 8,
+            "orderType": "MARKET",
+            "side": "BUY",
+            "tradingPair": "ETHUSDT",
             "type": "futures"
         }
     ],
-    "webhook_port": 9080
+    "webhook_port": 9008
 }

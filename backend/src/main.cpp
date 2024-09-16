@@ -87,11 +87,15 @@ private:
             for (const auto& botConfig : configData.at("bots")) 
             {
                 string id = botConfig.at("id");
-            string type = botConfig.at("type");
-            string tradingPair = botConfig.at("tradingPair");
+                string type = botConfig.at("type");
+                string tradingPair = botConfig.at("tradingPair");
+                string side = botConfig.at("side");
+                string baseSizeType = botConfig.at("baseSizeType");
+                string orderType = botConfig.at("orderType");
+                int baseOrderSize = botConfig.value("baseOrderSize", 1);  
                 int leverage = botConfig.value("leverage", 1);  // Default to 1 if not provided
 
-                Bot* load_bot = new Bot(id, type, tradingPair, leverage, UserApiKey, UserSecret);
+                Bot* load_bot = new Bot(id, type, tradingPair, side, baseSizeType, orderType, baseOrderSize, leverage, UserApiKey, UserSecret);
                 bots[id] = load_bot;
             }
 
@@ -154,22 +158,17 @@ private:
 
             // Extract the bot details
             string id = botData["id"];
-            string botType = botData["type"];
+            string type = botData["type"];
             string tradingPair = botData["tradingPair"];
+            string side = botData["side"];
+            string baseSizeType = botData["baseSizeType"];
+            string orderType = botData["orderType"];
             int leverage = botData["leverage"];
+            int baseOrderSize = botData["baseOrderSize"];
             string apiKey = UserApiKey;
-            string apiSecret = UserSecret;
+            string apiSecret = UserSecret;                       
 
-            // Print or process the bot data for testing                            <-----------TESTING OUTPUT------------>
-            cout << "Received new bot configuration:" << endl;
-            cout << "id: " << id << endl;
-            cout << "Type: " << botType << endl;
-            cout << "Trading Pair: " << tradingPair << endl;
-            cout << "Leverage: " << leverage << endl;
-            cout << "API Key: " << apiKey << endl;
-            cout << "API Secret: " << apiSecret << endl;   //                       <-----------END TEST OUTPUT------------>                         
-
-            Bot* new_bot = new Bot(id, botType, tradingPair, leverage, apiKey, apiSecret);
+            Bot* new_bot = new Bot(id, type, tradingPair, side, baseSizeType, orderType, baseOrderSize, leverage, UserApiKey, UserSecret);
             bots[id] = new_bot;
 
             // add bot to static config file
@@ -267,10 +266,14 @@ private:
             for (const auto& [id, bot] : bots) 
             {
                 json botData;
-                botData["id"] = bot->getId();  // Assuming you have a getId() method in Bot class
-                botData["type"] = bot->getType();  // Assuming you have a getType() method
-                botData["tradingPair"] = bot->getTradingPair();  // Assuming you have a getTradingPair() method
-                botData["leverage"] = bot->getLeverage();  // Assuming you have a getLeverage() method
+                botData["id"] = bot->getId();  
+                botData["type"] = bot->getType();  
+                botData["tradingPair"] = bot->getTradingPair(); 
+                botData["side"] = bot->getSide(); 
+                botData["baseSizeType"] = bot->getBaseSizeType();
+                botData["orderType"] = bot->getOrderType();
+                botData["baseOrderSize"] = bot->getBaseOrderSize();  
+                botData["leverage"] = bot->getLeverage();  
 
                 botsList.push_back(botData);
             }

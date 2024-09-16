@@ -158,3 +158,8 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+.font-semibold {
+  font-weight: 600;
+  color: white;
+}

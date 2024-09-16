@@ -8,11 +8,15 @@ import { CustomSlider } from "@/components/ui/custom-slider"
 import { Bot } from '@/lib/types'
 
 interface Bot {
-  id: string;
-  type: string;
-  tradingPair: string;
-  leverage: number;
-}
+    id: string;
+    type: string;
+    tradingPair: string;
+    side: string;
+    baseSizeType: string;
+    orderType: string;
+    baseOrderSize: number;
+    leverage: number;
+  }
 
 const fetchBotsFromAPI = async (): Promise<Bot[]> => {
     try 
@@ -35,6 +39,10 @@ const fetchBotsFromAPI = async (): Promise<Bot[]> => {
             if (typeof bot.id === 'string' &&
                 typeof bot.type === 'string' &&
                 typeof bot.tradingPair === 'string' &&
+                typeof bot.side === 'string' &&
+                typeof bot.baseSizeType === 'string' &&
+                typeof bot.orderType === 'string' &&
+                typeof bot.baseOrderSize === 'number' &&
                 typeof bot.leverage === 'number') {
                 return bot as Bot;
             } else {
@@ -82,7 +90,7 @@ const saveBotToAPI = async (bot: Bot): Promise<Bot> => {
       console.error(error);
       throw error;
     }
-};
+  };
 
 export default function ManageBots() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -111,8 +119,14 @@ export default function ManageBots() {
     setSelectedBot(prev => prev ? { ...prev, [name]: value } : null);
   };
 
-  const handleTypeChange = (value: string) => {
-    setSelectedBot(prev => prev ? { ...prev, type: value } : null);
+  const handleOrderValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(event.target.value); // Convert to number
+    setSelectedBot(prev => prev ? ({ ...prev, baseOrderSize: value }) : null);
+  };
+
+
+  const handleTypeChange = (name: keyof Bot, value: string | number) => {
+    setSelectedBot(prev => prev ? { ...prev, [name]: value } : null);
   };
 
   const handleLeverageChange = (value: number[]) => {
@@ -185,72 +199,128 @@ export default function ManageBots() {
           {selectedBot && (
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-2xl text-gray-100">Edit Bot</CardTitle>
+                <CardTitle className="text-2xl text-gray-100">Edit Bot: {selectedBot.id}</CardTitle>
                 <CardDescription className="text-gray-400">Edit the selected bot's details.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="id" className="text-gray-200">Bot ID</Label>
-                    <Input
-                      id="id"
-                      name="id"
-                      value={selectedBot.id}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="type" className="text-gray-200">Bot Type</Label>
-                    <Select onValueChange={handleTypeChange} value={selectedBot.type}>
-                      <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
-                        <SelectValue placeholder="Select bot type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
-                        <SelectItem value="spot">Spot</SelectItem>
-                        <SelectItem value="futures">Futures</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="leverage" className="text-gray-200">Leverage</Label>
-                    <div className="flex items-center space-x-4">
-                        <CustomSlider
-                        id="leverageSlider"
-                        min={1}
-                        max={100}
-                        step={1}
-                        value={[selectedBot.leverage]}
-                        onValueChange={handleLeverageChange}
-                        className="flex-grow"
-                        />
+                    <div>
+                        <Label htmlFor="id" className="text-gray-200">Bot ID</Label>
                         <Input
-                        id="leverage"
-                        name="leverage"
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={selectedBot.leverage}
-                        onChange={handleLeverageInputChange}
-                        className="w-20 bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                        id="id"
+                        name="id"
+                        value={selectedBot.id}
+                        onChange={handleInputChange}
+                        required
+                        className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
                         />
                     </div>
-                  </div>
-                  <div>
+
+                    <div>
+                        <Label htmlFor="side" className="text-gray-200">Bot Side (Long or Short)</Label>
+                        <Select onValueChange={(value) => handleTypeChange('side', value)} value={selectedBot.side}>
+                        <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectValue placeholder="Select bot side" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectItem value="BUY">BUY</SelectItem>
+                            <SelectItem value="SELL">SELL</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="type" className="text-gray-200">Bot Type</Label>
+                        <Select onValueChange={(value) => handleTypeChange('type', value)} value={selectedBot.type}>
+                        <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectValue placeholder="Select bot type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectItem value="spot">Spot</SelectItem>
+                            <SelectItem value="futures">Futures</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="baseSizeType" className="text-gray-200">Order in: USD Value/Percentage of Account</Label>
+                        <Select onValueChange={(value) => handleTypeChange('baseSizeType', value)} value={selectedBot.baseSizeType}>
+                        <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectValue placeholder="Select USD or Percentage" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="Percentage">Percentage</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    <div>
+                        <Label htmlFor="orderType" className="text-gray-200">Market or Limit order</Label>
+                        <Select onValueChange={(value) => handleTypeChange('orderType', value)} value={selectedBot.orderType}>
+                        <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectValue placeholder="Select Market or Limit order" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                            <SelectItem value="MARKET">Market</SelectItem>
+                            <SelectItem value="LIMIT">Limit</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="baseOrderSize" className="text-gray-200">Order Size ({selectedBot.baseSizeType})</Label>
+                        <Input
+                        id="baseOrderSize"
+                        name="baseOrderSize"
+                        type="number"
+                        value={selectedBot.baseOrderSize}
+                        onChange={handleOrderValueChange}
+                        required
+                        className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <Label htmlFor="leverage" className="text-gray-200">Leverage</Label>
+                        <div className="flex items-center space-x-4">
+                        <CustomSlider
+                            id="leverageSlider"
+                            min={1}
+                            max={100}
+                            step={1}
+                            value={[selectedBot.leverage]}
+                            onValueChange={handleLeverageChange}
+                            className="flex-grow"
+                        />
+                        <Input
+                            id="leverage"
+                            name="leverage"
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={selectedBot.leverage}
+                            onChange={handleLeverageInputChange}
+                            className="w-20 bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                        />
+                        </div>
+                    </div>
+
+                    <div>
                     <Label htmlFor="tradingPair" className="text-gray-200">Trading Pair</Label>
                     <Input
-                      id="tradingPair"
-                      name="tradingPair"
-                      value={selectedBot.tradingPair}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                    id="tradingPair"
+                    name="tradingPair"
+                    value={selectedBot.tradingPair}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
                     />
-                  </div>
-                  <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                    {isLoading ? 'Saving...' : 'Save Bot'}
-                  </Button>
+                    </div>
+
+                    <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        {isLoading ? 'Saving...' : 'Save Bot'}
+                    </Button>
                 </form>
               </CardContent>
             </Card>

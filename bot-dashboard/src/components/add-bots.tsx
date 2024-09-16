@@ -12,6 +12,10 @@ interface Bot {
   id: string;
   type: string;
   tradingPair: string;
+  side: string;
+  baseSizeType: string;
+  orderType: string;
+  baseOrderSize: number;
   leverage: number;
 }
 
@@ -47,6 +51,10 @@ export default function TradingBotDashboard() {
     id: '',
     type: 'spot',
     tradingPair: '',
+    side: 'BUY',
+    baseSizeType: '',
+    orderType: 'MARKET',
+    baseOrderSize: 0,
     leverage: 1,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +65,13 @@ export default function TradingBotDashboard() {
     setNewBot(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleTypeChange = (value: string) => {
-    setNewBot(prev => ({ ...prev, type: value }));
+  const handleOrderValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(event.target.value); // Convert to number
+    setNewBot(prev => ({ ...prev, baseOrderSize: value }));
+  };
+
+  const handleTypeChange = (name: keyof Bot, value: string | number) => {
+    setNewBot(prev => ({ ...prev, [name]: value }));
   };
 
   const handleLeverageChange = (value: number[]) => {
@@ -84,6 +97,10 @@ export default function TradingBotDashboard() {
         id: '',
         type: 'spot',
         tradingPair: '',
+        side: 'BUY',
+        baseSizeType: '',
+        orderType: 'MARKET',
+        baseOrderSize: 0,
         leverage: 1,
       });
     } catch (err) {
@@ -117,8 +134,20 @@ export default function TradingBotDashboard() {
                 />
               </div>
               <div>
+                <Label htmlFor="side" className="text-gray-200">Bot Side (Long or Short)</Label>
+                <Select onValueChange={(value) => handleTypeChange('side', value)} value={newBot.side}>
+                  <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectValue placeholder="Select bot side" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectItem value="BUY">BUY</SelectItem>
+                    <SelectItem value="SELL">SELL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="type" className="text-gray-200">Bot Type</Label>
-                <Select onValueChange={handleTypeChange} value={newBot.type}>
+                <Select onValueChange={(value) => handleTypeChange('type', value)} value={newBot.type}>
                   <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
                     <SelectValue placeholder="Select bot type" />
                   </SelectTrigger>
@@ -128,6 +157,43 @@ export default function TradingBotDashboard() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label htmlFor="baseSizeType" className="text-gray-200">Order in: USD Value/Percentage of Account</Label>
+                <Select onValueChange={(value) => handleTypeChange('baseSizeType', value)} value={newBot.baseSizeType}>
+                  <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectValue placeholder="Select USD or Percentage" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="Percentage">Percentage</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="orderType" className="text-gray-200">Market or Limit order</Label>
+                <Select onValueChange={(value) => handleTypeChange('orderType', value)} value={newBot.orderType}>
+                  <SelectTrigger className="w-full bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectValue placeholder="Select Market or Limit order" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 text-gray-100 border-gray-600">
+                    <SelectItem value="MARKET">Market</SelectItem>
+                    <SelectItem value="LIMIT">Limit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="baseOrderSize" className="text-gray-200">Order Size ({newBot.baseSizeType})</Label>
+                <Input
+                  id="baseOrderSize"
+                  name="baseOrderSize"
+                  value={newBot.baseOrderSize}
+                  onChange={handleOrderValueChange}
+                  required
+                  className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
+                />
+              </div>
+             
               <div>
                 <Label htmlFor="leverage" className="text-gray-200">Leverage</Label>
                 <div className="flex items-center space-x-4">
@@ -162,6 +228,7 @@ export default function TradingBotDashboard() {
                   className="bg-gray-700 text-gray-100 border-gray-600 focus:border-blue-500"
                 />
                 </div>
+                
               </div>
               <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
                 {isLoading ? 'Saving...' : 'Save Bot'}
