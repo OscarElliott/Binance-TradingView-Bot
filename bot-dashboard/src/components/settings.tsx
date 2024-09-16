@@ -24,11 +24,15 @@ export default function Settings() {
     const fetchUserDetails = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/getSettings'); // Replace with your endpoint
+        const response = await fetch('http://localhost:9080/getSettings', {
+            method: 'GET',
+            mode: "cors",
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch user settings');
         }
         const data = await response.json();
+        console.log('Final result:', response);
         setUserDetails({
           email: data.Email || '',
           apiKey: data.apiKey || '',
@@ -56,15 +60,16 @@ export default function Settings() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/postSettings', { // Replace with your endpoint
+      const response = await fetch('http://localhost:9080/postSettings', { 
         method: 'POST',
+        mode: "cors",
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           Email: userDetails.email,
           binance_api_key: userDetails.apiKey,
-          binance_api_secret: userDetails.apiKey, // Ideally, this should be kept secure
+          binance_api_secret: userDetails.apiSecret,
         }),
       });
       if (!response.ok) {

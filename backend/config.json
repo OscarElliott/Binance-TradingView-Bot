@@ -1,18 +1,18 @@
 {
-    "Email": "Your Email",
-    "binance_api_key": "your_api_key",
-    "binance_api_secret": "your_api_secret",
+    "Email": "Enter Your Email",
+    "binance_api_key": "Enter Your API KEY",
+    "binance_api_secret": "ENTER YOUR API SECRET",
     "bots": [
         {
             "id": "spot_bot_1",
             "leverage": 1,
-            "trading_pair": "BTCUSDT",
+            "tradingPair": "BTCUSDT",
             "type": "spot"
         },
         {
             "id": "futures_bot_1",
             "leverage": 2,
-            "trading_pair": "BTCUSDT",
+            "tradingPair": "BTCUSDT",
             "type": "futures"
         },
         {

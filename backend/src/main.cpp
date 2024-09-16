@@ -52,6 +52,8 @@ private:
     thread wsThread;
     string UserApiKey;
     string UserSecret;
+    string Email;
+    int PORT_NUMBER;
 
 
     void setupRoutes() 
@@ -60,9 +62,12 @@ private:
         Routes::Post(router, "/webhook", Routes::bind(&BackendServer::handleWebhook, this));
         Routes::Post(router, "/addbot", Routes::bind(&BackendServer::handleAddBot, this));
         Routes::Options(router, "/addbot", Routes::bind(&BackendServer::handleOptionsRequest, this));
-        Routes::Post(router, "/getbots", Routes::bind(&BackendServer::handleFetchBots, this));
-        Routes::Post(router, "/getSettings", Routes::bind(&BackendServer::fetchUserConfig, this));
+        Routes::Get(router, "/getbots", Routes::bind(&BackendServer::handleFetchBots, this));
+        Routes::Options(router, "/getbots", Routes::bind(&BackendServer::handleOptionsRequest, this));
+        Routes::Get(router, "/getSettings", Routes::bind(&BackendServer::fetchUserConfig, this));
+        Routes::Options(router, "/getSettings", Routes::bind(&BackendServer::handleOptionsRequest, this));
         Routes::Post(router, "/postSettings", Routes::bind(&BackendServer::updateUserConfig, this));
+        Routes::Options(router, "/postSettings", Routes::bind(&BackendServer::handleOptionsRequest, this));
     }
 
     void loadBotsFromConfig() 
@@ -72,15 +77,18 @@ private:
         {
             json configData;
             configFile >> configData;
-            UserApiKey = configData["binance_api_key"];
-            UserSecret = configData["binance_api_secret"];
+            UserApiKey = configData.at("binance_api_key");
+            UserSecret = configData.at("binance_api_secret");
+            Email = configData.at("Email");
+            PORT_NUMBER = configData.at("webhook_port");
+
 
             // Load each bot from the config
-            for (const auto& botConfig : configData["bots"]) 
+            for (const auto& botConfig : configData.at("bots")) 
             {
-                string id = botConfig["id"];
-                string type = botConfig["type"];
-                string tradingPair = botConfig["trading_pair"];
+                string id = botConfig.at("id");
+            string type = botConfig.at("type");
+            string tradingPair = botConfig.at("tradingPair");
                 int leverage = botConfig.value("leverage", 1);  // Default to 1 if not provided
 
                 Bot* load_bot = new Bot(id, type, tradingPair, leverage, UserApiKey, UserSecret);
@@ -105,6 +113,7 @@ private:
     void handleOptionsRequest(const Rest::Request&, Http::ResponseWriter writer) 
     {
         addCORSHeaders(writer);
+        cout << "OPTIONS CONFIGURED" << endl;
         writer.send(Http::Code::Ok, ""); // Respond to OPTIONS request
     }
 
@@ -285,33 +294,15 @@ private:
 
     void fetchUserConfig(const Rest::Request& request, Http::ResponseWriter response) 
     {
-        ifstream file("config.json");  // Open the JSON file
-        if (!file.is_open()) {
-            cerr << "Error: Could not open config.json file.\n";
-            return;
-        }
-
-        json config;
-        try {
-            file >> config;  // Parse the JSON file into the config object
-        } catch (const json::parse_error& e) {
-            cerr << "Error: JSON parse error: " << e.what() << "\n";
-            return;
-        }
-
-        // Extract the fields from the JSON object
-        string email = config.value("Email", "");
-        string apiKey = config.value("binance_api_key", "");
-        
-
         try
         {
             json responseData;
-            responseData["Email"] = email;
-            responseData["apiKey"] = apiKey;
+            responseData["Email"] = Email;
+            responseData["apiKey"] = UserApiKey;
             responseData["status"] = "success";
             responseData["message"] = "Bot configuration saved successfully.";
 
+            addCORSHeaders(response);
             response.send(Http::Code::Ok, responseData.dump());
         }
         catch(const exception& e)
@@ -335,7 +326,7 @@ private:
         }
 
         // Open the JSON file to read current configuration
-        ifstream file("config.json");
+        ifstream file("../config.json");
         if (!file.is_open()) {
             json errorResponse;
             errorResponse["status"] = "error";
@@ -359,16 +350,19 @@ private:
         // Update the configuration with new values
         if (newConfig.contains("Email")) {
             config["Email"] = newConfig["Email"];
+            Email = newConfig["Email"];
         }
         if (newConfig.contains("binance_api_key")) {
             config["binance_api_key"] = newConfig["binance_api_key"];
+            UserApiKey = newConfig["binance_api_key"];
         }
         if (newConfig.contains("binance_api_secret")) {
             config["binance_api_secret"] = newConfig["binance_api_secret"];
+            UserSecret = newConfig["binance_api_secret"];
         }
 
         // Write the updated configuration back to the file
-        ofstream outFile("config.json");
+        ofstream outFile("../config.json");
         if (!outFile.is_open()) {
             json errorResponse;
             errorResponse["status"] = "error";
@@ -392,6 +386,7 @@ private:
         json successResponse;
         successResponse["status"] = "success";
         successResponse["message"] = "Configuration updated successfully.";
+        addCORSHeaders(response);
         response.send(Http::Code::Ok, successResponse.dump());
     }
 
