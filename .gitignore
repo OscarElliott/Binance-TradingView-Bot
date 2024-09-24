@@ -1,2 +1,3 @@
-/backend/config.json
-/backend/bibot
+backend/config.json
+backend/src/bibot_test
+backend/src/Tests/pw_test.json

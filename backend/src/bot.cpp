@@ -80,40 +80,49 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     boost::uuids::uuid uuid = generator();
 
     // Get the current timestamp in milliseconds
-    auto timestamp = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
+    long long timestamp = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
 
     float quantity;
+    string symbol = this->getTradingPair();
+    int baseOrderSize = this->getBaseOrderSize();
 
     if (this->getBaseSizeType() == "USD")
-        quantity = this->getBaseOrderSize()/price;
+    {
+        quantity = baseOrderSize/price;
+    }
     else if (this->getBaseSizeType() == "Percentage")
-        quantity = this->getBaseOrderSize()/price;
+    {
+        float balance = 40.0;
+        quantity = baseOrderSize/price;
+    }
 
 
     // Create the JSON request body
     nlohmann::json params;
-    params["symbol"] = tradingPair;
+    params["symbol"] = symbol;
     params["side"] = side;
     params["type"] = orderType;
 
-    if (orderType == "LIMIT") {
+
+    if (orderType == "LIMIT") 
+    {
         params["price"] = to_string(price);
         params["timeInForce"] = "GTC"; // Good 'Til Canceled for limit orders
+        params["quantity"] = quantity;
     }
-
-    params["quantity"] = to_string(quantity);
+    else
+        params["quoteOrderQty"] = baseOrderSize;
     params["timestamp"] = timestamp;
 
     // Prepare the string to sign (for HMAC-SHA256)
-    string query_string = "symbol=" + tradingPair +
+    string query_string = "symbol=" + symbol +
                           "&side=" + side +
                           "&type=" + orderType +
-                          "&quantity=" + to_string(quantity) +
                           "&timestamp=" + to_string(timestamp);
 
-    if (orderType == "LIMIT") {
-        query_string += "&price=" + to_string(price) + "&timeInForce=GTC";
-    }
+    if (orderType == "LIMIT") 
+        query_string += "&price=" + to_string(price) + "&timeInForce=GTC" + "&quantity" = to_string(quantity);
+    else query_string += "&quoteOrderQty=" + to_string(baseOrderSize);
 
     // Sign the request
     string signature = signRequest(query_string, this->getApiSecret());
@@ -129,16 +138,19 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     params["apiKey"] = this->getApiKey();
 
     // Create the client and HTTP request
-    http_client client(U("https://api.binance.com"));
+    http_client client(U("https://testnet.binance.vision"));
     http_request request(methods::POST);
-    request.set_request_uri(U("/api/v3/order"));
+    string url = "/api/v3/order?" + query_string + "&signature=" + signature;
+    request.set_request_uri(U(url));
 
     // Set headers
-    request.headers().add(U("X-MBX-APIKEY"), this->getApiKey());
-    request.headers().add(U("Content-Type"), U("application/json"));
+    string header_key = this->getApiKey();
+    request.headers().add(U("X-MBX-APIKEY"), U(header_key));
+    request.headers().add(U("Content-Type"), U("application/x-www-form-urlencoded"));
 
     // Set the JSON body as the request content
-    request.set_body(payload.dump(), "application/json");
+    //string requestBody = payload.dump();
+    //request.set_body("", "application/x-www-form-urlencoded");
 
     // Send the request and get the response
     auto response = client.request(request).get();
@@ -147,8 +159,20 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     if (response.status_code() == status_codes::OK) {
         cout << response.extract_json().get().serialize() << endl;
     } else {
-        cout << "response hit error" << endl;
-        cerr << "Error: " << response.status_code() << endl;
+        response.extract_string().then([=](const std::string &body) {
+            cout << "Error: " << response.status_code() << " - " << response.extract_string().get() << endl;
+
+            cout << "Request failed with status: " << response.status_code() << endl;
+            cout << "Response body: " << body << endl;
+            // Print the request that was sent
+            cout << "Sent request details:" << endl;
+            cout << "URI: " << request.request_uri().to_string() << endl;
+            cout << "Headers: " << endl;
+            for (const auto &header : request.headers()) {
+                cout << header.first << ": " << header.second << endl;
+            }
+            //cout << "Body: " << requestBody << endl;
+        }).wait();
     }
 }
 

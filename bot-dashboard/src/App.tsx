@@ -9,7 +9,9 @@ export default function App() {
   return (
     <Router>
       <div className="flex app-body bg-gray-900 text-gray-100">
-        <Sidebar />
+        <div >
+          <Sidebar/>
+        </div>
         <main className="flex-1 overflow-y-scroll min-h-screen p-4">
           <Routes>
             <Route path="/" element={<UserDashboard />} />

@@ -22,6 +22,16 @@
             "side": "BUY",
             "tradingPair": "ETHUSDT",
             "type": "futures"
+        },
+        {
+            "baseOrderSize": 99,
+            "baseSizeType": "Percentage",
+            "id": "Shmizzy Bot",
+            "leverage": 3,
+            "orderType": "MARKET",
+            "side": "BUY",
+            "tradingPair": "SOLUSDT",
+            "type": "futures"
         }
     ],
     "webhook_port": 9008
