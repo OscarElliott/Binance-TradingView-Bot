@@ -19,7 +19,14 @@ using namespace std;
 string APIkey;
 string APIsecret;
 
-void test1() 
+// TEST print scaffold
+/*
+    if (testSuccesful == true) cout << "\033[32m [NAME] : TESTS PASSED\033[0m" << endl;
+    else cout << "\033[31m [NAME] : TESTS FAILED\033[0m" << endl;
+
+*/
+
+bool test1() 
 {
     Bot bot("123", "spot", "BTCUSDT", "BUY", "USD", "LIMIT", 1000, 10, "api_key", "api_secret");
 
@@ -36,8 +43,9 @@ void test1()
     if (bot.getApiKey() != "api_key") testSuccesful = false;
     if (bot.getApiSecret() != "api_secret") testSuccesful = false;
 
-    if (testSuccesful == true) cout << "Constructor : TESTS PASSED" << endl;
-    else cout << "Constructor : TESTS FAILED" << endl;
+    if (testSuccesful == true) cout << "\033[32mConstructor : TESTS PASSED\033[0m" << endl;
+    else cout << "\033[31mConstructor : TESTS FAILED\033[0m" << endl;
+    return testSuccesful;
 }
 
 void test2() 
@@ -58,10 +66,62 @@ void test2()
 
 void test3()
 {
-    Bot bot("123", "spot", "BTCUSDT", "BUY", "USD", "MARKET", 100, 1, APIkey, APIsecret);
+    Bot bot("3", "spot", "BTCUSDT", "BUY", "USD", "MARKET", 100, 1, APIkey, APIsecret);
     nlohmann::json webhookData = {{"price", 60000.0}};
 
-    bot.handleWebhook(webhookData);
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot USD MARKET BUY : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot USD MARKET BUY : TESTS FAILED \033[0m" << endl;
+}
+
+void test4()
+{
+    Bot bot("4", "spot", "BTCUSDT", "SELL", "USD", "MARKET", 100, 1, APIkey, APIsecret);
+    nlohmann::json webhookData = {{"price", 60000.0}};
+
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot USD MARKET SELL : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot USD MARKET SELL : TESTS FAILED \033[0m" << endl;
+}
+
+void test5()
+{
+    Bot bot("5", "spot", "BTCUSDT", "BUY", "Percentage", "MARKET", 100, 1, APIkey, APIsecret);
+    nlohmann::json webhookData = {{"price", 60000.0}};
+
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot Percentage MARKET BUY : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot Percentage MARKET BUY : TESTS FAILED \033[0m" << endl;
+}
+
+void test6()
+{
+    Bot bot("6", "spot", "BTCUSDT", "SELL", "Percentage", "MARKET", 100, 1, APIkey, APIsecret);
+    nlohmann::json webhookData = {{"price", 60000.0}};
+
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot Percentage MARKET SELL : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot Percentage MARKET SELL : TESTS FAILED \033[0m" << endl;
+}
+
+void test7()
+{
+    Bot bot("7", "spot", "BTCUSDT", "BUY", "USD", "LIMIT", 10, 1, APIkey, APIsecret);
+    nlohmann::json webhookData = {{"price", 63492}};
+
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot USD LIMIT BUY : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot USD LIMIT BUY : TESTS FAILED \033[0m" << endl;
+}
+
+void test8()
+{
+    Bot bot("8", "spot", "BTCUSDT", "SELL", "USD", "LIMIT", 10, 1, APIkey, APIsecret);
+    nlohmann::json webhookData = {{"price", 63492}};
+
+    if (bot.handleWebhook(webhookData))
+        cout << "\033[32mspot USD LIMIT SELL : TESTS PASSED \033[0m" << endl;
+    else cout << "\033[31mspot USD LIMIT SELL : TESTS FAILED \033[0m" << endl;
 }
 
 string sign(const string & query, const string & secret) 
@@ -135,9 +195,14 @@ int main()
 {
     setAPIDetails();
     //fetchUSDT();
-    test1();
-    test2();
+    if (!test1())
+        test2(); // will print verbose
     test3();
+    test4();
+    test5();
+    test6();
+    test7();
+    test8();
     return 0;
 }
 

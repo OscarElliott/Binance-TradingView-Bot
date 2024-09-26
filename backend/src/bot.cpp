@@ -20,18 +20,18 @@ Bot::Bot(const std::string &id, const std::string &type, const std::string &trad
 
 
 // THIS IS ONLY PARTIALLY IMPLEMENTED AT THIS POINT
-void Bot::handleWebhook(const nlohmann::json& webhookData) {
+bool Bot::handleWebhook(const nlohmann::json& webhookData) {
     double price  = 0;
     if (webhookData["price"] > 0) price = webhookData["price"];
     if (type == "spot")
     {
-        placeSpotOrder(this->getSide(), this->getOrderType(), price);
+        return placeSpotOrder(this->getSide(), this->getOrderType(), price);
     }
     else if (type == "futures")
     {
-        placeFuturesOrder(this->getSide(), this->getOrderType(), price);
+        return placeFuturesOrder(this->getSide(), this->getOrderType(), price);
     }
-    
+    return false;
 }
 
 string Bot::getId() {
@@ -74,7 +74,14 @@ int Bot::getBaseOrderSize() {
     return baseOrderSize;
 }
 
-void Bot::placeSpotOrder(const string &side, const string &orderType, double price) {
+string Bot::shortenToNDecimals(float number, int n) 
+{
+    std::stringstream stream;
+    stream << fixed << setprecision(n) << number;
+    return stream.str();
+}
+
+bool Bot::placeSpotOrder(const string &side, const string &orderType, double price) {
     // Generate UUID for the request ID
     boost::uuids::random_generator generator;
     boost::uuids::uuid uuid = generator();
@@ -82,18 +89,49 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     // Get the current timestamp in milliseconds
     long long timestamp = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
 
-    float quantity;
+    string quantity;
+    double q_value = 0;
     string symbol = this->getTradingPair();
     int baseOrderSize = this->getBaseOrderSize();
+    exchangeInfo exInfo = getExchangeInfoFilterForSymbol(symbol);
+    int precision = 0;
+    while(exInfo.stepSize < 1) 
+    {
+        exInfo.stepSize*=10;
+        precision++;
+    }
 
     if (this->getBaseSizeType() == "USD")
     {
-        quantity = baseOrderSize/price;
+        q_value = (baseOrderSize/price);
+        quantity = shortenToNDecimals(q_value, precision);
     }
     else if (this->getBaseSizeType() == "Percentage")
     {
-        float balance = 40.0;
-        quantity = baseOrderSize/price;
+        float balance;
+        // if SIDE is BUY get USDT balance
+        if (this->getSide() == "BUY")
+        {
+            string asset = "USDT";
+            balance = getBalance(asset);
+            q_value = baseOrderSize*balance;
+            quantity = shortenToNDecimals(q_value, precision);
+        }
+        else if (this->getSide() == "SELL")
+        {
+            q_value = getBalance(symbol);
+            quantity = shortenToNDecimals(q_value, precision);
+        }
+    }
+    cout << q_value << endl; 
+
+    if (q_value < exInfo.minQty) 
+    {
+        std::cout << "Quantity is below minimum allowed: " << exInfo.minQty << " tried to order: " << q_value << std::endl;
+        q_value = exInfo.minQty; // Set to minQty if below
+    } else if (q_value > exInfo.maxQty) {
+        std::cout << "Quantity exceeds maximum allowed: " << exInfo.maxQty << std::endl;
+        q_value = exInfo.maxQty; // Set to maxQty if above
     }
 
 
@@ -121,7 +159,7 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
                           "&timestamp=" + to_string(timestamp);
 
     if (orderType == "LIMIT") 
-        query_string += "&price=" + to_string(price) + "&timeInForce=GTC" + "&quantity" = to_string(quantity);
+        query_string += "&price=" + to_string(price) + "&timeInForce=GTC" + "&quantity=" + quantity;
     else query_string += "&quoteOrderQty=" + to_string(baseOrderSize);
 
     // Sign the request
@@ -158,7 +196,10 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
     // Handle response
     if (response.status_code() == status_codes::OK) {
         cout << response.extract_json().get().serialize() << endl;
-    } else {
+        return true;
+    } 
+    else 
+    {
         response.extract_string().then([=](const std::string &body) {
             cout << "Error: " << response.status_code() << " - " << response.extract_string().get() << endl;
 
@@ -174,9 +215,10 @@ void Bot::placeSpotOrder(const string &side, const string &orderType, double pri
             //cout << "Body: " << requestBody << endl;
         }).wait();
     }
+    return false;
 }
 
-void Bot::placeFuturesOrder(const string &side, const string &orderType, double price) {
+bool Bot::placeFuturesOrder(const string &side, const string &orderType, double price) {
     // Generate UUID for the request ID
     boost::uuids::random_generator generator;
     boost::uuids::uuid uuid = generator();
@@ -246,11 +288,16 @@ void Bot::placeFuturesOrder(const string &side, const string &orderType, double 
     auto response = client.request(request).get();
 
     // Handle response
-    if (response.status_code() == status_codes::OK) {
+    if (response.status_code() == status_codes::OK) 
+    {
         cout << response.extract_json().get().serialize() << endl;
-    } else {
+        return true;
+    } 
+    else 
+    {
         cerr << "Error: " << response.status_code() << endl;
     }
+    return false;
 }
 
 string Bot::signRequest(const string & query, const string & secret) 
@@ -307,3 +354,111 @@ void Bot::updateLeverage(const string& symbol, int leverage, const string& apiKe
         cerr << "Error: " << e.what() << endl;
     }
 }
+
+float Bot::getBalance(string & asset)
+{
+    float balance = 0.0f; // Variable to store the balance
+
+    http_client client(U("https://api.binance.com/"));
+    string full_request = "/api/v3/ticker/price?symbol=" + asset;
+
+    // Perform the GET request
+    client.request(methods::GET, full_request).then([&balance](http_response response) -> pplx::task<web::json::value>
+    {
+        // Check if the response is OK
+        if (response.status_code() == status_codes::OK)
+        {
+            return response.extract_json(); // Extract the JSON data
+        }
+        return pplx::task_from_result(web::json::value()); // Return an empty JSON object if the request failed
+    })
+    .then([&balance](pplx::task<web::json::value> previousTask) 
+    {
+        try
+        {
+            web::json::value const & v = previousTask.get(); // Get the JSON result
+
+            // Assuming the JSON object has a field "price" with the balance value
+            if (v.has_field(U("price")))
+            {
+                balance = std::stof(v.at(U("price")).as_string()); // Convert the price value to float
+            }
+        }
+        catch (http_exception const & e)
+        {
+            wcout << e.what() << endl;
+        }
+    }).wait();
+
+    return balance;
+}
+
+exchangeInfo Bot::getExchangeInfoFilterForSymbol(const std::string& asset)
+{
+    exchangeInfo exInfo = {0, 0, 0, 0, 0, 0};
+    
+    http_client client(U("https://api.binance.com"));
+    string request_uri = "/api/v3/exchangeInfo?symbol=" + asset;
+
+    client.request(methods::GET, request_uri).then([](http_response response) -> pplx::task<web::json::value>
+    {
+        if (response.status_code() == status_codes::OK)
+        {
+            return response.extract_json();
+        }
+        return pplx::task_from_result(web::json::value());
+    })
+    .then([&exInfo, asset](pplx::task<web::json::value> previousTask) // Capture asset by value
+    {
+        try
+        {
+            web::json::value const& v = previousTask.get();
+
+            if (v.has_field(U("symbols")))
+            {
+                auto symbols = v.at(U("symbols")).as_array();
+                
+                for (auto symbolInfo : symbols)
+                {
+                    // Check if the symbol matches
+                    if (symbolInfo.at(U("symbol")).as_string() == asset) // asset is captured here
+                    {
+                        if (symbolInfo.has_field(U("filters")))
+                        {
+                            auto filters = symbolInfo.at(U("filters")).as_array();
+
+                            for (auto filter : filters)
+                            {
+                                // Look for LOT_SIZE filter
+                                if (filter.at(U("filterType")).as_string() == U("LOT_SIZE"))
+                                {
+                                    exInfo.minQty = std::stod(filter.at(U("minQty")).as_string());
+                                    exInfo.maxQty = std::stod(filter.at(U("maxQty")).as_string());
+                                    exInfo.stepSize = std::stod(filter.at(U("stepSize")).as_string());
+                                }
+                                // Look for PRICE_FILTER filter
+                                if (filter.at(U("filterType")).as_string() == U("PRICE_FILTER"))
+                                {
+                                    exInfo.minPrice = std::stod(filter.at(U("minPrice")).as_string());
+                                    exInfo.maxPrice = std::stod(filter.at(U("maxPrice")).as_string());
+                                    exInfo.tickSize = std::stod(filter.at(U("tickSize")).as_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (http_exception const& e)
+        {
+            std::wcout << e.what() << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Error parsing response: " << e.what() << std::endl;
+        }
+    }).wait();
+    
+    return exInfo;
+}
+

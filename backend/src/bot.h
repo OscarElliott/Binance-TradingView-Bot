@@ -4,16 +4,30 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
+
+struct exchangeInfo 
+{
+    double minQty;
+    double maxQty;
+    double stepSize;
+    double minPrice;
+    double maxPrice;
+    double tickSize;
+};
+
 class Bot 
 {
 public:
     // Constructor
     Bot(const std::string &  id, const std::string & type, const std::string & tradingPair, const std::string &  side, const std::string & baseSizeType, const std::string & orderType, int baseOrderSize, int leverage, const std::string &  UserApiKey, const std::string &  UserSecret);
     // Public methods
-    void handleWebhook(const nlohmann::json & webhookData);
-    void placeSpotOrder(const std::string & side, const std::string & orderType, double price);
-    void placeFuturesOrder(const std::string & side, const std::string & orderType, double price);
+    bool handleWebhook(const nlohmann::json & webhookData);
+    bool placeSpotOrder(const std::string & side, const std::string & orderType, double price);
+    bool placeFuturesOrder(const std::string & side, const std::string & orderType, double price);
     void updateLeverage(const std::string& symbol, int leverage, const std::string& apiKey, const std::string& secretKey);
+    float getBalance(std::string & asset);
+    exchangeInfo getExchangeInfoFilterForSymbol(const std::string& symbol);
+    std::string shortenToNDecimals(float number, int n);
 
     // Public attributes
     std::string getId();
